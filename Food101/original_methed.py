@@ -38,8 +38,6 @@ checkpoint_callback_path = pathlib.Path("Projects\Food101\Callbacks");
 
 class_names = os.listdir(image_path);
 
-#Slow and long metheod
-
 def GetPathFromTxt(path):
     value = [];
 

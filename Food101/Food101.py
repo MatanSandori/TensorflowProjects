@@ -81,7 +81,6 @@ helper.PlotHistory(history);
 
 print(model.evaluate(test_data));
 
-"""
 pred_images_path = pathlib.Path("Projects\Food101\Pred_Images");
 
 pred_images = GetData(pred_images_path, split=None);
@@ -103,4 +102,3 @@ for i in range(len(images)):
     plt.matshow(tf.cast(images[i][0], tf.float32) / 255.);
     plt.title(f"pred: {class_names[preds[i]]} | prob: {preds_probs[i][preds[i]]}");
     plt.show();
-"""
