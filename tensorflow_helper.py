@@ -1,4 +1,6 @@
+from logging import PercentStyle
 import tensorflow as tf
+from tensorflow.python.keras.layers.preprocessing.image_preprocessing import RandomHeight
 import tensorflow_hub as hub
 
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -22,45 +24,49 @@ import pathlib
 import itertools
 import datetime
 
+# from tensorflow_helper import helper
+
 class helper():
     """
-    \ffrom tensorflow_helper import helper\n
+    `\ffrom tensorflow_helper import helper`\n
 
     \nhelper:\n
-    -- helper.SetGpuLimit() | limits the memory growth\n\n
+    -- `helper.SetGpuLimit()` | limits the memory growth\n\n
     helper.Plot:\n
-        -- helper.Plot.PlotConfusionMatrix(y_true, y_pred) | Plots a confusion matrix from the data\n
-        -- helper.Plot.PlotDecisionBoundory(model, x, y)   | Plots a decision boundory from the data<classifction>\n
-        -- helper.Plot.PlotHistory(history)                | Plots the model loss/metrics curves\n
-        -- helper.Plot.PlotLearningRate(history, epochs or lrs) | Ploted learning rate\n
+        -- `helper.Plot.PlotConfusionMatrix(y_true, y_pred)` | Plots a confusion matrix from the data\n
+        -- `helper.Plot.PlotDecisionBoundory(model, x, y)`   | Plots a decision boundory from the data<classifction>\n
+        -- `helper.Plot.PlotHistory(history)`                | Plots the model loss/metrics curves\n
+        -- `helper.Plot.PlotLearningRate(history, epochs or lrs)` | Ploted learning rate\n
     \n\n
     helper.Image:\n
-        -- helper.Image.PlotRandomImage(path, (target) or (class_names)) | Plots a random image from the data\n\n
-        -- helper.Image.CreateGen() | Creates and returns a gen to the data\n
-        -- helper.Image.GetDataFromGenDir(data_gen, path) | Returns data from directory\n
+        -- `helper.Image.PlotRandomImage(path, (target) or (class_names))` | Plots a random image from the data\n\n
+        -- `helper.Image.CreateGen()` | Creates and returns a gen to the data\n
+        -- `helper.Image.GetDataFromGenDir(data_gen, path)` | Returns data from directory\n
     \n\n
     helper.Model:\n
-        -- helper.Model.CreateModel(model_url) | Returns a *sequential* transfer learning model\n
-        -- helper.Model.CompileModel(model, optimzier, loss) | Compiles the model\n
-        -- helper.Model.UnfreezeLayers(unfreeze , base_line)  | Unfreeze's the layers of the model <tf.keras.applcations>\n
+        -- `helper.Model.CreateModel(model_url)` | Returns a *sequential* transfer learning model\n
+        -- `helper.Model.CompileModel(model, optimzier, loss)` | Compiles the model\n
+        -- `helper.Model.UnfreezeLayers(unfreeze , base_line)`  | Unfreeze's the layers of the model\n
     \n\n
     helper.Callbacks:\n
-        -- helper.Callbacks.LearningRateCallback()                | Return's a learning rate scheduler callback\n
-        -- helper.Callbacks.CreateTensorboardCallback(path, name) | Return's a tensorboard callback\n
-        -- helper.Callbacks.CreateCheckpointCallback(path, name)  | Return's a checkpoint callback\n
+        -- `helper.Callbacks.LearningRateCallback()`                | Return's a learning rate scheduler callback\n
+        -- `helper.Callbacks.CreateTensorboardCallback(path, name)` | Return's a tensorboard callback\n
+        -- `helper.Callbacks.CreateCheckpointCallback(path, name)`  | Return's a checkpoint callback\n
+    helper.Math:\n
+        -- `helper.Math.DivideArray(percentage, array)` | Return's 2 arrays diveided by the percentage\n
     """
 
     class Image():
         """
         helper.Image:\n
-            helper.Image.PlotRandomImage(path, (target) or (class_names)) | Plots a random image from the data\n\n
-            helper.Image.CreateGen() | Creates and returns a gen to the data\n
-            helper.Image.GetDataFromGenDir(data_gen, path) | Returns data from directory\n
-            helper.Image.GetClassNames() | Returns an array of all the files in the path\n
+            `helper.Image.PlotRandomImage(path, (target) or (class_names))` | Plots a random image from the data\n\n
+            `helper.Image.CreateGen()` | Creates and returns a gen to the data\n
+            `helper.Image.GetDataFromGenDir(data_gen, path)` | Returns data from directory\n
+            `helper.Image.GetClassNames()` | Returns an array of all the files in the path\n
         \n\n
         """
 
-        def PlotRandomImage(path=None, target=None, class_names=None, images=None, labels=None, index=None, data_edited=None,loop=1, loop_forever=False):
+        def PlotRandomImage(path=None, target=None, class_names=None, y_pred=None, y_prob=None, images=None, labels=None, images_recalse=None,index=None, data_edited=None,loop=1, loop_forever=False):
             """
             Requirements:\n
 
@@ -70,20 +76,32 @@ class helper():
                 class_names | names of all the classes\n
 
             Extra:\n
-
-                images       | will use images as numbers to plot the image\n
-                labels       | if images then labels need a value\n
-                index        | set a chosen index -> defult: index will be randomly chosen\n
-                data_edited  | if image was edited via layers | set the value to 'data_edited'\n
-                loop         | number of images to show\n
-                loop_forever | if True -> will show inf images\n
+                
+                y_pred        | required: class_names and images -> adds predictions of the model into the plot\n
+                y_prob        | required: y_pred -> adds statistical chance of the model predictions\n
+                images        | will use images as numbers to plot the image\n
+                labels        | if images then labels need a value\n
+                images_rescale| rescales the images -> defult: 1 if y_pred is false -> else 1./255 (ex: 255. or 1/255.)\n
+                index         | set a chosen index -> defult: index will be randomly chosen\n
+                data_edited   | if image was edited via layers | set the value to 'data_edited'\n
+                loop          | number of images to show\n
+                loop_forever  | if True -> will show inf images\n
 
             Returns:\n
 
-                Ploted image from the data\n
+                `Ploted image from the data`\n
             """
-            if(images is None):
-                assert not(path is None), "\n**path is missing** \npath | the path of the data (ex: 'data/train')\n";
+            if(images is None or y_pred is None):
+                assert not(path is None), "\nPlotRandomImage( **path is missing** ) \npath | the path of the data (ex: 'data/train')\n";
+            if(y_pred is not None and images is None or class_names is None):
+                assert False, "\nPlotRandomImage( **images/class_names is missing** )\n";
+            if(y_prob is not None and y_pred is None):
+                assert False, "\nPlotRandomImage( **y_pred is missing** ) y_pred | required: class_names and images -> adds predictions of the model into the plot\n";
+
+            if(y_pred is None and images is not None):
+                images_recalse = 1.;
+            elif(y_pred is not None):
+                images_recalse = 1/255.;
 
             if(loop_forever):
                 loop=sys.maxsize;
@@ -97,7 +115,11 @@ class helper():
                     return random.choice(data);
                 return data[index];
 
-            def setTitle(target, use_data_edited=False):
+            def setTitle(target, use_data_edited=False, index=None):
+                if(y_prob is not None and y_pred is not None):
+                    return f"pred: {class_names[y_pred[index]]} | prob: {y_prob[y_pred[index]]}";
+                if(y_pred is not None):
+                    return f"pred: {class_names[y_pred[index]]}";
                 if(use_data_edited):
                     return f"True label: {target}";
                 return f"Edited image: {target}";
@@ -106,16 +128,16 @@ class helper():
                 plt.axis("off");
                 plt.show();
 
-            def plot(img, target):
+            def plot(img, target, index=None):
                 plt.matshow(img);
-                plt.title(setTitle(target));
+                plt.title(setTitle(target, index=index));
                 show();
                 if(data_edited is not None):
                     plt.matshow(tf.squeeze(data_edited(tf.expand_dims(img, axis=0))));
-                    plt.title(setTitle(target, True));
+                    plt.title(setTitle(target, True, index));
                     show();
 
-            if((path is not None) and (((target is not None) or (class_names is not None))) and (images is None)):
+            if((path is not None) and (((target is not None) or (class_names is not None))) and (images is None) and (y_pred is None)):
                 for j in range(loop):
                     if(class_names is not None):
                         target = random.choice(class_names);
@@ -133,10 +155,12 @@ class helper():
                 for j in range(loop):               
                     i = setImage(images, returnIndex=True);
 
-                    if(labels is None):
-                        plot(images[i], i);
+                    if(y_pred is not None):
+                        plot(images[i] / images_recalse, class_names[y_pred[i]], index);
+                    elif(labels is None):
+                        plot(images[i] / images_recalse, i, i);
                     else:
-                        plot(images[i], class_names[tf.argmax(labels[i], 0)]);
+                        plot(images[i] / images_recalse, class_names[tf.argmax(labels[i], 0)], i);
 
 
         def CreateGen(edited=False, rescale=1./255, depth=0.2, rotation_range=None, shear_range=None, zoom_range=None, height_shift_range=None, width_shift_range=None, horizontal_flip=True):
@@ -155,7 +179,7 @@ class helper():
 
             Returns:\n
 
-                Creates and returns a gen to the data\n
+                `Creates and returns a gen to the data`\n
             """
             if(edited):
                 def setVar(var=None):
@@ -180,6 +204,46 @@ class helper():
             return ImageDataGenerator(
                 rescale=rescale
                 );
+
+        def CreateEditedLayer(rescale=1., only_rescale=False, depth=0.2, rotation_range=None, zoom_range=None, height_shift_range=None, width_shift_range=None, flip="horizontal"):
+            """
+            Extra:\n
+
+                rescale            |  rescale of image<normalized> -> defult: 1.\n
+                only_rescale       |  if True -> will only rescale the image\n
+                depth              |  will set the value of all variabels <that are None> to depth -> defult: 0.2\n
+                rotation_range     |  change the rotation of the image\n
+                zoom_range         |  change the zoom of the image\n
+                height_shift_range |  shift the heigth of the image\n
+                width_shift_range  |  shift the width of the image\n
+                flip               |  defult: "horizontal" -> flip's the image horizontaly\n
+
+            Returns:\n
+
+                `Creates and returns an edited layer`\n
+            """
+            if(not(only_rescale)):
+                def setVar(var=None):
+                    if(var is None):
+                        return depth;
+                
+                rotation_range = setVar(rotation_range);
+                zoom_range = setVar(zoom_range);
+                height_shift_range = setVar(height_shift_range);
+                width_shift_range = setVar(width_shift_range);
+
+                return models.Sequential([
+                    layers.experimental.preprocessing.Rescaling(rescale),
+                    layers.experimental.preprocessing.RandomFlip(flip),
+                    layers.experimental.preprocessing.RandomRotation(rotation_range),
+                    layers.experimental.preprocessing.RandomZoom(zoom_range),
+                    layers.experimental.preprocessing.RandomHeight(height_shift_range),
+                    layers.experimental.preprocessing.RandomWidth(width_shift_range)
+                ]);
+            return models.Sequential([
+                    layers.experimental.preprocessing.Rescaling(rescale)
+                ]);
+
 
 
         def GetDataFromGenDir(data_gen, path, batch_size=32, target_size=(224,224), class_mode="categorical", seed=42):
@@ -232,7 +296,7 @@ class helper():
 
             Returns:\n
 
-                Returns a *sequential* transfer learning model\n
+                `Returns a *sequential* transfer learning model`\n
             """
             assert not(model_url is None), "\n**model_url is missing** \nmodel_url | model link from: tenosrflow-hub\n";
             assert not(input_shape is None), "\n*input_shape is missing** \ninput_shape | input shape of model\n";
@@ -277,7 +341,7 @@ class helper():
 
             Returns:\n
 
-                Compiles the model\n
+                `Compiles the model`\n
             """
             assert not(model is None), "CompileModel( **model is None** ) | API or Sequential\n";
 
@@ -316,7 +380,7 @@ class helper():
 
             Returns:\n
 
-                Unfreeze's the layers of the model <tf.keras.applcations>\n\n
+                `Unfreeze's the layers of the model <tf.keras.applcations>`\n\n
             """
             assert not(unfreeze is None),  "UnfreezeLayers( **freeze is None** ) \nunfreeze  | the percentage of the amount of layers that will be unfreezed\n";
             assert not(base_line is None), "UnfreezeLayers( **base_line is None** ) \nbase_line | the output of tf.keras.appliactions.//\n";
@@ -340,10 +404,10 @@ class helper():
     class Plot():
         """
         \nhelper plot:\n
-            helper.PlotConfusionMatrix(y_true, y_pred) | Plotes a confusion matrix from the data\n
-            helper.PlotDecisionBoundory(model, x, y)   | Plots a decision boundory from the data<classifction>\n
-            PlotHistory(history)                       | Ploted model loss/metrics curves\n
-            PlotLearningRate(history, epochs or lrs)   | Ploted learning rate\n
+            `helper.Plot.PlotConfusionMatrix(y_true, y_pred)`     | Plotes a confusion matrix from the data\n
+            `helper.Plot.PlotDecisionBoundory(model, x, y)`       | Plots a decision boundory from the data<classifction>\n
+            `helper.Plot.PlotHistory(history)`                    | Ploted model loss/metrics curves\n
+            `helper.Plot.PlotLearningRate(history, epochs or lrs)`| Ploted learning rate\n
         """
 
         def PlotConfusionMatrix(y_true=None, y_pred=None, class_names=None, figsize=(10, 7), size=17, text_size=10, show_text=True, show_text_norm=False, save_png_path=None):
@@ -365,7 +429,7 @@ class helper():
 
             Returns:\n
 
-                Ploted confusion matrix of the data set\n
+                `Ploted confusion matrix of the data set`\n
             """
             #if y_true or y_pred is None | return error
             assert not(y_true is None), "\n**y_true is missing** \ny_true | true label\n";
@@ -447,7 +511,7 @@ class helper():
 
             Returns:\n
 
-                Ploted model predictions <with classification>\n
+                `Ploted model predictions <with classification>`\n
             """
             assert not(model is None), "\n**model is missing** \nmodel | using the model to make predictions\n";
             assert not(x is None), "\n**x is missing** \nx | data\n";
@@ -486,7 +550,7 @@ class helper():
 
             Returns:\n
 
-                Ploted model loss/metrics curves\n
+                `Ploted model loss/metrics curves`\n
             """
             assert not(history is None), "\n**history is missing** \nhistory | value of model.fit (ex: history = model.fit(...))\n";
 
@@ -504,7 +568,7 @@ class helper():
 
             Returns:\n
 
-                Ploted learning rate \n
+                `Ploted learning rate`\n
             """
             assert not(history is None), "\n**history is missing** \nhistory | value of model.fit (ex: history = model.fit(...))\n";
             if(lrs is not None):
@@ -522,9 +586,9 @@ class helper():
 
         """
         helper.Callbacks:\n
-            helper.Callbacks.LearningRateCallback()                | Return's a learning rate scheduler callback\n
-            helper.Callbacks.CreateTensorboardCallback(path, name) | Return's a tensorboard callback\n
-            helper.Callbacks.CreateCheckpointCallback(path, name)  | Return's a checkpoint callback\n
+            `helper.Callbacks.LearningRateCallback()`                | Return's a learning rate scheduler callback\n
+            `helper.Callbacks.CreateTensorboardCallback(path, name)` | Return's a tensorboard callback\n
+            `helper.Callbacks.CreateCheckpointCallback(path, name)`  | Return's a checkpoint callback\n
         """
 
 
@@ -541,7 +605,7 @@ class helper():
 
             Returns:\n
 
-                Return's a tensorboard callback\n
+                `Return's a tensorboard callback`\n
             """
             assert not(path is None), "\n**path is missing** \npath | folder_path(ex: folder/tensorboard)\n";
             assert not(path_name is None), "\n**path is missing** \npath_name | name of folder in path(ex: res_net_v2_50)\n";
@@ -566,7 +630,7 @@ class helper():
 
             Returns:\n
 
-                Return's a checkpoint callback\n
+                `Return's a checkpoint callback`\n
             """
             assert not(path is None), "CreateCheckpointCallback( **path is missing** ) \npath | folder_path(ex: folder/chekcpoint)\n";
             
@@ -607,9 +671,40 @@ class helper():
 
             Returns:\n
 
-                Return's a learning rate scheduler callback\n
+                `Return's a learning rate scheduler callback`\n
             """
             return callbacks.LearningRateScheduler(lrs);
+
+
+    class Math:
+        """
+        \nhelper.Math:\n
+            `helper.Math.DivideArray(percentage, array)` | Return's 2 array's diveided by the percentage\n
+        """
+        def DivideArray(percentage=None, array=None):
+            """
+            Requirements:\n
+
+                percentage | value bettewn 0 - 1 as a float or 1 - 100 as an integer\n
+                array      | numpy/python array\n
+
+            Returns:\n
+
+                `Return's 2 arrays diveided by the percentage`\n
+            """
+            assert not(percentage is None), "DivideArray( **percentange is None** ) \npercentage | value bettewn 0 - 1 as a float or 1 - 100 as an integer\n";
+            assert not(array is None), "DivideArray( **array is None** ) \narray | numpy/python array\n";
+
+            if(percentage > 100 or percentage < 0):
+                assert False, "*percentage* need's to be set between 0 - 1 | or | 1 - 100";
+            elif(percentage >= 1):
+                percentage /=100;
+            
+            num_of_values = int(percentage * len(array));
+
+            return array[:num_of_values], array[num_of_values:]
+
+
 
     def SetGpuLimit(condition=True):
         """
@@ -619,7 +714,7 @@ class helper():
 
         Returns:\n
 
-            limits the memory growth\n
+            `limits the memory growth`\n
         """
         gpu = tf.config.list_physical_devices("GPU");
         try:
@@ -635,25 +730,25 @@ class helper():
 
     def PlotRandomImage(path=None, target=None, class_names=None, images=None, labels=None, index=None, data_edited=None,loop=1, loop_forever=False):
         """
-        \tshortcut of: helper.Image.PlotRandomImage(path, target)
+        \tshortcut of: `helper.Image.PlotRandomImage(path, target)`
         """
         helper.Image.PlotRandomImage(path, target, class_names, images, labels, index, data_edited, loop, loop_forever);
 
     def PlotConfusionMatrix(y_true=None, y_pred=None, class_names=None, figsize=(10, 7), size=17, text_size=10, show_text=True, show_text_norm=False):
         """
-        \tshorcut of: helper.Plot.PlotConfusionMatrix(y_true, y_pred)
+        \tshorcut of: `helper.Plot.PlotConfusionMatrix(y_true, y_pred)`
         """    
         helper.Plot.PlotConfusionMatrix(y_true, y_pred, class_names, figsize, size, text_size, show_text, show_text_norm);
 
     def PlotHistory(history=None):
         """
-        \tshortcut of: helper.Plot.PlotHistory(history)
+        \tshortcut of: `helper.Plot.PlotHistory(history)`
         """
         helper.Plot.PlotHistory(history);
 
     def CompileModel(model=None, optimizer=optimizers.Adam(), loss="categorical"):
         """
-        \tshortcut of: helper.Model.CompileModel(model)
+        \tshortcut of: `helper.Model.CompileModel(model)`
         """
         helper.Model.CompileModel(model, optimizer, loss);
 
@@ -661,7 +756,7 @@ class helper():
         """
         \nhelper.Experimental -> experiencing new functions\n
             helper.Experimental.Image\n
-                helper.helper.Experimental.Image.GetClassNames(path) |  Returns an array of all the files in the path\n
+                `helper.helper.Experimental.Image.GetClassNames(path)` |  Returns a list of all the files in path\n
         """
         class Image:
             def GetClassNames(path, show_class_names=False):
@@ -676,7 +771,7 @@ class helper():
 
                 Returns:\n
 
-                    Returns an array of all the files in the path\n
+                    `Returns an array of all the files in the path`\n
                 """
                 assert not(path is None), "GetClassNames( **path is missing** ) \npath | path of folder location\n";
 
