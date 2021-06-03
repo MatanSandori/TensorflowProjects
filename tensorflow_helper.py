@@ -1,6 +1,4 @@
-from logging import PercentStyle
 import tensorflow as tf
-from tensorflow.python.keras.layers.preprocessing.image_preprocessing import RandomHeight
 import tensorflow_hub as hub
 
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -32,6 +30,7 @@ class helper():
 
     \nhelper:\n
     -- `helper.SetGpuLimit()` | limits the memory growth\n\n
+    -- `helper.SetSeed()`     | sets the random seed for numpy and tensorflow\n
     helper.Plot:\n
         -- `helper.Plot.PlotConfusionMatrix(y_true, y_pred)` | Plots a confusion matrix from the data\n
         -- `helper.Plot.PlotDecisionBoundory(model, x, y)`   | Plots a decision boundory from the data<classifction>\n
@@ -52,6 +51,7 @@ class helper():
         -- `helper.Callbacks.LearningRateCallback()`                | Return's a learning rate scheduler callback\n
         -- `helper.Callbacks.CreateTensorboardCallback(path, name)` | Return's a tensorboard callback\n
         -- `helper.Callbacks.CreateCheckpointCallback(path, name)`  | Return's a checkpoint callback\n
+    \n\n
     helper.Math:\n
         -- `helper.Math.DivideArray(percentage, array)` | Return's 2 arrays diveided by the percentage\n
     """
@@ -469,8 +469,7 @@ class helper():
             ax.title.set_size(size);
 
             plt.xticks(rotation=70, fontsize=size);
-            plt.ylabel(fontsize=size);
-
+            
             def setText(i, j):
                 if(show_text_norm):
                     return f"{cm[i,j]}({cm_norm[i, j]}%)"
@@ -725,32 +724,17 @@ class helper():
             pass;
 
 
-    #Short cuts ->
+    def SetSeed(seed=42):
+        """
+        Extras:\n
 
+            seed | set the value of the seed -> defult: 42
 
-    def PlotRandomImage(path=None, target=None, class_names=None, images=None, labels=None, index=None, data_edited=None,loop=1, loop_forever=False):
+        Returns:\n
+            `sets the random seed for numpy and tensorflow`\n
         """
-        \tshortcut of: `helper.Image.PlotRandomImage(path, target)`
-        """
-        helper.Image.PlotRandomImage(path, target, class_names, images, labels, index, data_edited, loop, loop_forever);
-
-    def PlotConfusionMatrix(y_true=None, y_pred=None, class_names=None, figsize=(10, 7), size=17, text_size=10, show_text=True, show_text_norm=False):
-        """
-        \tshorcut of: `helper.Plot.PlotConfusionMatrix(y_true, y_pred)`
-        """    
-        helper.Plot.PlotConfusionMatrix(y_true, y_pred, class_names, figsize, size, text_size, show_text, show_text_norm);
-
-    def PlotHistory(history=None):
-        """
-        \tshortcut of: `helper.Plot.PlotHistory(history)`
-        """
-        helper.Plot.PlotHistory(history);
-
-    def CompileModel(model=None, optimizer=optimizers.Adam(), loss="categorical"):
-        """
-        \tshortcut of: `helper.Model.CompileModel(model)`
-        """
-        helper.Model.CompileModel(model, optimizer, loss);
+        tf.random.set_seed(seed);
+        np.random.seed(seed);
 
     class Experimental:
         """
@@ -781,14 +765,3 @@ class helper():
                     print(class_names);
 
                 return class_names;
-
-        """
-        class Plot:
-            pass;
-        
-        class Model:
-            pass;
-
-        class Callbacks:
-            pass;
-        """
