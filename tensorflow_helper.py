@@ -1,6 +1,8 @@
 import tensorflow as tf
 import tensorflow_hub as hub
 
+import tensorflow.python.ops.numpy_ops.np_config as np_config
+
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import layers, Model, models, activations, optimizers, losses, metrics, callbacks
 
@@ -13,7 +15,7 @@ import matplotlib.image as mpimg
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.compose import make_column_transformer
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score, f1_score, precision_score, recall_score
 
 import random
 import os
@@ -31,6 +33,7 @@ class helper():
     \nhelper:\n
     -- `helper.SetGpuLimit()` | limits the memory growth\n\n
     -- `helper.SetSeed()`     | sets the random seed for numpy and tensorflow\n
+    -- `helper.EnableNumpyBehavior()` | Enables numpy behavior\n
     helper.Plot:\n
         -- `helper.Plot.PlotConfusionMatrix(y_true, y_pred)` | Plots a confusion matrix from the data\n
         -- `helper.Plot.PlotDecisionBoundory(model, x, y)`   | Plots a decision boundory from the data<classifction>\n
@@ -53,8 +56,11 @@ class helper():
         -- `helper.Callbacks.CreateCheckpointCallback(path, name)`  | Return's a checkpoint callback\n
     \n\n
     helper.Math:\n
-        -- `helper.Math.DivideArray(percentage, array)` | Return's 2 arrays diveided by the percentage\n
+        -- `helper.Math.DivideArray(percentage, array)`    | Return's 2 arrays diveided by the percentage\n
+        `helper.Math.CalculateModelResults(y_true, y_pred)`| Return's a dictionary list of: accuracy, precision, recall, f1-score\n
     """
+
+    __version__ = f"\nHelper class version is: {0.35}v\n";
 
     class Image():
         """
@@ -398,8 +404,8 @@ class helper():
                 layers.trainable = False;
             
             if(print_layers):
-                for i, layers in enumerate(base_line.layers):
-                    print(f"{i} | {layers.name} | {layers.trainable}");
+                for i, layer in enumerate(base_line.layers):
+                    print(f"{i} | {layer.name} | {layer.trainable}");
 
     class Plot():
         """
@@ -468,7 +474,7 @@ class helper():
             ax.yaxis.label.set_size(size);
             ax.title.set_size(size);
 
-            plt.xticks(rotation=70, fontsize=size);
+            plt.xticks(rotation=70);
             
             def setText(i, j):
                 if(show_text_norm):
@@ -678,7 +684,8 @@ class helper():
     class Math:
         """
         \nhelper.Math:\n
-            `helper.Math.DivideArray(percentage, array)` | Return's 2 array's diveided by the percentage\n
+            `helper.Math.DivideArray(percentage, array)`       | Return's 2 array's diveided by the percentage\n
+            `helper.Math.CalculateModelResults(y_true, y_pred)`| Return's a dictionary list of: accuracy, precision, recall, f1-score\n
         """
         def DivideArray(percentage=None, array=None):
             """
@@ -701,7 +708,38 @@ class helper():
             
             num_of_values = int(percentage * len(array));
 
-            return array[:num_of_values], array[num_of_values:]
+            return array[:num_of_values], array[num_of_values:];
+
+        def CalculateModelResults(y_true=None, y_pred=None, mode="binary"):
+            """
+            Requirements:\n
+
+                y_true | a list/np-array/tenosr of true labels\n
+                y_pred | a list/np-array/tenosr of predicted labels(as integages)\n
+
+            Extra:\n
+
+                mode | "binary", "categorical"\n
+
+            Returns:\n
+
+                `Return's a dictionary list of: accuracy, precision, recall, f1-score`\n
+            """
+            assert not(y_true is None), "helper.Math.CalculateModelResults( **y_true is None** ) \ny_true | a list/np-array/tenosr of true labels\n";
+            assert not(y_pred is None), "helper.Math.CalculateModelResults( **y_pred is None** ) \ny_pred | a list/np-array/tenosr of predicted labels(as integages)\n";
+
+            def SetAverage():
+                if(mode == "binary"):
+                    return "binary";
+                elif(mode == "categorical"):
+                    return "micro";
+                assert False, "Mode was not found \nmode | 'binary', 'categorical'\n";
+            return {
+                "accuracy": accuracy_score(y_true, y_pred),
+                "precision": precision_score(y_true, y_pred, average=SetAverage()),
+                "recall": recall_score(y_true, y_pred, average=SetAverage()),
+                "f1-score": f1_score(y_true, y_pred, average=SetAverage())
+            };
 
 
 
@@ -735,6 +773,26 @@ class helper():
         """
         tf.random.set_seed(seed);
         np.random.seed(seed);
+
+    def EnableNumpyBehavior():
+        """
+        Returns: \n
+            `Enables numpy behavior  |  from:` \n
+            `tensorflow.python.ops.numpy_ops.np_config`
+        """
+        np_config.enable_numpy_behavior();
+
+
+    def Set(condition=True, seed=42):
+        """
+        Calles the functions:\n
+            `helper.SetGpuLimit()`\n
+            `helper.SetSeed()`\n
+            `helper.EnableNumpyBehavior`\n
+        """
+        helper.SetGpuLimit(condition);
+        helper.SetSeed(seed);
+        helper.EnableNumpyBehavior();
 
     class Experimental:
         """
