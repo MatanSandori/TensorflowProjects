@@ -23,6 +23,7 @@ import sys
 import pathlib
 import itertools
 import datetime
+import time
 
 # from tensorflow_helper import helper
 
@@ -30,7 +31,7 @@ class helper():
     """
     `\ffrom tensorflow_helper import helper`\n
 
-    \nhelper:\n
+    \n# helper:\n
     -- `helper.SetGpuLimit()` | limits the memory growth\n\n
     -- `helper.SetSeed()`     | sets the random seed for numpy and tensorflow\n
     -- `helper.EnableNumpyBehavior()` | Enables numpy behavior\n
@@ -57,10 +58,11 @@ class helper():
     \n\n
     helper.Math:\n
         -- `helper.Math.DivideArray(percentage, array)`    | Return's 2 arrays diveided by the percentage\n
-        `helper.Math.CalculateModelResults(y_true, y_pred)`| Return's a dictionary list of: accuracy, precision, recall, f1-score\n
+        -- `helper.Math.CalculateModelResults(y_true, y_pred)`| Return's a dictionary list of: accuracy, precision, recall, f1-score\n
+    helper
     """
 
-    __version__ = f"\nHelper class version is: {0.35}v\n";
+    __version__ = f"\nHelper class version is: {0.40}v\n";
 
     class Image():
         """
@@ -547,11 +549,13 @@ class helper():
             plt.ylim(yy.min(), yy.max());
             plt.show();
         
-        def PlotHistory(history=None):
+        def PlotHistory(history=None, save_path=None, show=True):
             """
             Requirements:\n
 
                 history | value of model.fit (ex: history = model.fit(...))\n
+                save_path | the path to save the data (if None will not save)\n
+                show | use plt.show? defult is True\n
 
             Returns:\n
 
@@ -560,7 +564,12 @@ class helper():
             assert not(history is None), "\n**history is missing** \nhistory | value of model.fit (ex: history = model.fit(...))\n";
 
             pd.DataFrame(history.history).plot();
-            plt.show();
+            
+            if(show):
+                plt.show();
+
+            if(save_path is not None):
+                plt.savefig(f"{save_path}.png");
 
         def PlotLearningRate(history=None, epochs=None, lrs=None):
             """
@@ -628,7 +637,7 @@ class helper():
             Extra:\n
 
                 name                | recommended: path name -> name of folder inside the file<path>(ex: res_net_v2_50)\n
-                class_mode          | "None" | "mae" | "mse" | "accuracy" | "categorical" | "sparse"\n
+                class_mode          | "None" | "mae" | "mse" | "accuracy" | "categorical" | "sparse" | "rmse" | custom...\n
                 get_checkpoint_path | if True -> returns the checkpoint path via path and returns the value\n
                 save_weights_only   | defult and recommended: True\n
                 save_best_only      | save only the best epoch <via val_loss> -> defult: True\n
@@ -648,6 +657,8 @@ class helper():
                     return "val_categorical_accuracy";
                 elif(class_mode == "sparse" or class_mode == "int"):
                     return "val_sparse_categorical_accuracy";
+                elif(class_mode == "rmse"):
+                    return "val_root_mean_squared_error";
                 else:
                     return class_mode;
 
@@ -741,7 +752,70 @@ class helper():
                 "f1-score": f1_score(y_true, y_pred, average=SetAverage())
             };
 
+    class Time:
+        """
+        Time:\n
 
+            `helper.Time.timer` | a class to count time\n
+        """
+        class Timer:
+            """
+            helper.Time.Timer:\n
+                helper.Time.Timer.CreateTimer() | Creates and returns a new timer object\n
+                helper.Time.Timer.GetTime() | Amount of time that passed since timer was created\n
+
+            ## Example of use:
+
+                timer = helper.Time.Timer();\n
+                timer_0 = timer.CreateTimer();\n
+                timer.Sleep(0.25);\n
+                total_time = timer.GetTime(timer_0);\n
+                -- total time is 0.25\n
+            """
+            def __init__(self):
+                self.times = [];
+                
+            def CreateTimer(self):
+                """
+                Returns:\n
+
+                    `Creates and returns a new timer object`\n
+                """
+                start_time = time.time();
+                self.times.append(start_time);
+                return len(self.times)-1;
+                
+            def GetTime(self, index=0, round_time=True, convert_to_string=False):
+                """
+                Args:\n
+
+                    index | output of timer.CreateTimer()
+                    round_time | round output -> example: 0.25005353 into 0.25 | defult: True
+                    convert_to_string | return output as string -> example: 0.25 into "0.25s", defult: False
+
+                Returns:\n
+
+                    `Amount of time that passed since timer was created`\n
+                """
+                current_time = time.time();
+                result_time = current_time - self.times[index];
+                if(round_time):
+                    result_time = round(result_time, 2);
+                if(convert_to_string):
+                    result_time = f"{result_time}s";
+                return result_time;
+                
+            def Sleep(self, sec=None):
+                """
+                Args:\n
+
+                    sec | Stop time for ... sec\n
+
+                Returns:\n
+
+                    `Freezing time for a number of sec -> time.sleep(sec)`\n
+                """
+                time.sleep(sec);
 
     def SetGpuLimit(condition=True):
         """
@@ -788,7 +862,7 @@ class helper():
         Calles the functions:\n
             `helper.SetGpuLimit()`\n
             `helper.SetSeed()`\n
-            `helper.EnableNumpyBehavior`\n
+            `helper.EnableNumpyBehavior()`\n
         """
         helper.SetGpuLimit(condition);
         helper.SetSeed(seed);
