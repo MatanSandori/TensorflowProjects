@@ -24,7 +24,7 @@ import os
 
 from dataset import dataset
 
-batch_size = 32;
+batch_size = 4;
 units = 512;
 
 test = {"attention_test": False,
@@ -32,7 +32,7 @@ test = {"attention_test": False,
         "decoder_test": False,
         "loss_test": False};
 
-data = dataset(load=1000);
+data = dataset(load=10000);
 ds, tokanize = data.load_all(size=(128, 128), batch_size=batch_size, use_tqdm=True, max_tokens=50000);
 vocab_size = tokanize.vectorization.vocabulary_size();
 
@@ -368,11 +368,11 @@ def tokens_to_string(tokens):
     
     return string.numpy();
 
-def get_sampels(num_of_sampels=64):
+def get_sampels(num_of_sampels=64, dataset=ds):
     images = [];
     _tokens = [];
 
-    for (i, (image, tokens)) in enumerate(ds.unbatch()):
+    for (i, (image, tokens)) in enumerate(dataset.unbatch()):
         images.append(image);
         _tokens.append(tokens);
 
@@ -389,7 +389,7 @@ def show_models():
     encoder.summary();
     decoder.summary();
 
-history = train(epochs=80);
+history = train(epochs=25);
 
 show_models();
 
