@@ -38,9 +38,9 @@ vocab_size = tokanize.vectorization.vocabulary_size();
 
 print("\nNumber of tokens: ", vocab_size, "\n");
 
-class B_Attention(layers.Layer):
+class Attention(layers.Layer):
     def __init__(self, units=units):
-        super(B_Attention, self).__init__();
+        super(Attention, self).__init__();
 
         self.units = units;
 
@@ -134,7 +134,7 @@ class Decoder(Model):
             units=units, activation=activations.relu
         );
 
-        self.attention = B_Attention(units);
+        self.attention = Attention(units);
 
         self.embedding = Embedding(
             input_dim=vocab_size, output_dim=units
@@ -187,7 +187,7 @@ class Decoder(Model):
         return self.attention.reset_hidden(batch_size);
 
 if(test["attention_test"]):
-    attention = B_Attention();
+    attention = Attention();
 
     inputs = tf.random.uniform(shape=(4, units, 348));
     hidden = attention.reset_hidden(4);
