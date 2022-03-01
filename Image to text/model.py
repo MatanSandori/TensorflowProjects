@@ -36,7 +36,7 @@ data = dataset(load=1000);
 ds, tokanize = data.load_all(size=(128, 128), batch_size=batch_size, use_tqdm=True, max_tokens=50000);
 vocab_size = tokanize.vectorization.vocabulary_size();
 
-print("\nNumber of tokens: ", vocab_size, "\n");
+print("\nvocabulary size: ", vocab_size, "\n");
 
 class Attention(layers.Layer):
     def __init__(self, units=units):
